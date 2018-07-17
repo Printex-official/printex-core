@@ -1,0 +1,28 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/translations">
+        <file alias="bg">locale/printex_bg.qm</file>
+        <file alias="ca">locale/printex_ca.qm</file>
+        <file alias="cs">locale/printex_cs.qm</file>
+        <file alias="da">locale/printex_da.qm</file>
+        <file alias="de">locale/printex_de.qm</file>
+        <file alias="en">locale/printex_en.qm</file>
+        <file alias="en_US">locale/printex_en_US.qm</file>
+        <file alias="es">locale/printex_es.qm</file>
+        <file alias="fi">locale/printex_fi.qm</file>
+        <file alias="fr_FR">locale/printex_fr_FR.qm</file>
+        <file alias="it">locale/printex_it.qm</file>
+        <file alias="ja">locale/printex_ja.qm</file>
+        <file alias="ko_KR">locale/printex_ko_KR.qm</file>
+        <file alias="nl">locale/printex_nl.qm</file>
+        <file alias="pl">locale/printex_pl.qm</file>
+        <file alias="pt">locale/printex_pt.qm</file>
+        <file alias="pt_BR">locale/printex_pt_BR.qm</file>
+        <file alias="ro_RO">locale/printex_ro_RO.qm</file>
+        <file alias="ru">locale/printex_ru.qm</file>
+        <file alias="sk">locale/printex_sk.qm</file>
+        <file alias="sv">locale/printex_sv.qm</file>
+        <file alias="uk">locale/printex_uk.qm</file>
+        <file alias="zh_CN">locale/printex_zh_CN.qm</file>
+        <file alias="zh_TW">locale/printex_zh_TW.qm</file>
+    </qresource>
+</RCC>
