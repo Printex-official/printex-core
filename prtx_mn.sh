@@ -33,7 +33,7 @@ fi
 echo "Now downloading daemon and CLI"
 printex-cli stop > /dev/null 2>&1
 sleep 2
-sudo find /root/.printex/* ! -name 'printex.conf' -exec rm -rf {} +
+sudo find ~/.printex/* ! -name 'printex.conf' -exec rm -rf {} +
 cd ~
 wget https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/lin-daemon.zip
 unzip -o lin-daemon.zip
