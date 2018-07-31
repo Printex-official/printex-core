@@ -37,7 +37,7 @@ sudo find /root/.printex/* ! -name 'printex.conf' -exec rm -rf {} +
 cd ~
 wget https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/lin-daemon.zip
 unzip -o lin-daemon.zip
-mv printexd /usr/local/bin/ && mv printex-cli /usr/local/bin/
+sudo mv -f printexd /usr/local/bin/ && sudo mv -f printex-cli /usr/local/bin/
 chmod +x /usr/local/bin/printex*
 rm -rf lin-daemon.zip
 
