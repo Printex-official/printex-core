@@ -70,7 +70,7 @@ echo ""
 echo "Enter masternode private key for node $ALIAS , Go To your Windows Wallet Tools > Debug Console , Type masternode genkey"
 read PRIVKEY
 
-CONF_DIR=~/.printex/
+CONF_DIR=/root/.printex/
 CONF_FILE=printex.conf
 PORT=9797
 
