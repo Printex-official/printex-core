@@ -1,6 +1,6 @@
 #/bin/bash
 clear
-echo "Do you want to install all needed dependencies (no if you did it before)? [y/n]"
+echo "Do you want to install the required dependencies and create swap (no if you did it before)? [y/n]"
 read DOSETUP
 
 if [[ $DOSETUP =~ "y" ]] ; then
@@ -30,21 +30,16 @@ if [[ $DOSETUP =~ "y" ]] ; then
   source ~/.bashrc
 fi
 
-echo "Do you want to compile Daemon (please choose no if you did it before)? [y/n]"
-read DOSETUPTWO
-
-if [[ $DOSETUPTWO =~ "y" ]] ; then
-
+echo "Now downloading daemon and CLI"
 printex-cli stop > /dev/null 2>&1
 sleep 2
 find /root/.printex/* ! -name 'printex.conf' -exec rm -rf {} +
-cd /home/
+cd ~
 wget https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/lin-daemon.zip
 unzip -o lin-daemon.zip
 mv printexd /usr/local/bin/ && mv printex-cli /usr/local/bin/
 chmod +x /usr/local/bin/printex*
 rm -rf lin-daemon.zip
-fi
 
 echo ""
 echo "Configuring IP - Please Wait......."
@@ -92,6 +87,7 @@ echo "masternode=1" >> $CONF_DIR/$CONF_FILE
 echo "port=$PORT" >> $CONF_DIR/$CONF_FILE
 echo "mastenodeaddr=$IP:$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeprivkey=$PRIVKEY" >> $CONF_DIR/$CONF_FILE
+echo "addnode=seed.boumba.linkpc.net" >> $CONF_DIR/$CONF_FILE
 
 printexd -daemon
 
