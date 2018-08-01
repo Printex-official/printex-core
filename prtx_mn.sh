@@ -95,3 +95,12 @@ sudo mkdir -p $CONF_DIR
 sudo mv $CONF_FILE $CONF_DIR/$CONF_FILE
 
 printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
+
+if [ -d "/home/$USER" ]; then
+ echo "Would you like to install command line interface for user $USER? [y/n]"
+ read INSTALL_USER
+ if [[ $INSTALL_USER =~ "y" ]] ; then
+  mkdir /home/$USER/.printex
+  sudo cp /root/.printex/printex.conf /home/$USER/.printex/printex.conf
+ fi 
+fi
