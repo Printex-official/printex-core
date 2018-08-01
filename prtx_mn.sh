@@ -31,11 +31,11 @@ if [[ $DOSETUP =~ "y" ]] ; then
   source ~/.bashrc
 fi
 
-echo "Now downloading daemon and CLI"
 if ps -A | grep -q "[p]rintexd" ; then 
  printex-cli stop
  sleep 10
 fi
+echo "Now downloading daemon and CLI"
 sudo rm -rf /root/.printex
 cd ~
 wget https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/lin-daemon.zip
@@ -100,9 +100,11 @@ if [ -d "/home/$USER" ]; then
  echo "Would you like to install command line interface for user $USER? [y/n]"
  read INSTALL_USER
  if [[ $INSTALL_USER =~ "y" ]] ; then
-  mkdir /home/$USER/.printex
+  if [ ! -d "/home/$USER/.printex" ]; then
+   mkdir /home/$USER/.printex
+  fi
   sudo cp /root/.printex/printex.conf /home/$USER/.printex/printex.conf
- fi 
+ fi
 fi
 
 sudo printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
