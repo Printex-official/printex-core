@@ -32,8 +32,10 @@ if [[ $DOSETUP =~ "y" ]] ; then
 fi
 
 echo "Now downloading daemon and CLI"
-printex-cli stop
-sleep 10
+if ps -A | grep -q "[p]rintexd" ; then 
+ printex-cli stop
+ sleep 10
+fi
 sudo rm -rf /root/.printex
 cd ~
 wget https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/lin-daemon.zip
@@ -103,4 +105,4 @@ if [ -d "/home/$USER" ]; then
  fi 
 fi
 
-printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
+sudo printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
