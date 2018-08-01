@@ -70,23 +70,29 @@ echo ""
 echo "Enter masternode private key for node $ALIAS , Go To your Windows Wallet Tools > Debug Console , Type masternode genkey"
 read PRIVKEY
 
-CONF_DIR=/root/.printex/
+echo "Creating configuration file"
+
+CONF_DIR=/root/.printex
 CONF_FILE=printex.conf
 PORT=9797
 
-mkdir -p $CONF_DIR
-echo "rpcuser=user"`shuf -i 100000-10000000 -n 1` >> $CONF_DIR/$CONF_FILE
-echo "rpcpassword=pass"`shuf -i 100000-10000000 -n 1` >> $CONF_DIR/$CONF_FILE
-echo "rpcallowip=127.0.0.1" >> $CONF_DIR/$CONF_FILE
-echo "rpcport=9898" >> $CONF_DIR/$CONF_FILE
-echo "listen=1" >> $CONF_DIR/$CONF_FILE
-echo "server=1" >> $CONF_DIR/$CONF_FILE
-echo "daemon=1" >> $CONF_DIR/$CONF_FILE
-echo "logtimestamps=1" >> $CONF_DIR/$CONF_FILE
-echo "masternode=1" >> $CONF_DIR/$CONF_FILE
-echo "port=$PORT" >> $CONF_DIR/$CONF_FILE
-echo "mastenodeaddr=$IP:$PORT" >> $CONF_DIR/$CONF_FILE
-echo "masternodeprivkey=$PRIVKEY" >> $CONF_DIR/$CONF_FILE
-echo "addnode=seed.boumba.linkpc.net" >> $CONF_DIR/$CONF_FILE
+echo "rpcuser=user"`shuf -i 100000-10000000 -n 1` >> $CONF_FILE
+echo "rpcpassword=pass"`shuf -i 100000-10000000 -n 1` >> $CONF_FILE
+echo "rpcallowip=127.0.0.1" >> $CONF_FILE
+echo "rpcport=9898" >> $CONF_FILE
+echo "listen=1" >> $CONF_FILE
+echo "server=1" >> $CONF_FILE
+echo "daemon=1" >> $CONF_FILE
+echo "logtimestamps=1" >> $CONF_FILE
+echo "masternode=1" >> $CONF_FILE
+echo "port=$PORT" >> $CONF_FILE
+echo "mastenodeaddr=$IP:$PORT" >> $CONF_FILE
+echo "masternodeprivkey=$PRIVKEY" >> $CONF_FILE
+echo "addnode=seed.boumba.linkpc.net" >> $CONF_FILE
 
-printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
+sudo mkdir -p $CONF_DIR
+sudo mv $CONF_FILE $CONF_DIR/$CONF_FILE
+
+echo "Launching daemon"
+
+sudo printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
