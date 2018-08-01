@@ -94,4 +94,4 @@ echo "addnode=seed.boumba.linkpc.net" >> $CONF_FILE
 sudo mkdir -p $CONF_DIR
 sudo mv $CONF_FILE $CONF_DIR/$CONF_FILE
 
-sudo printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
+printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
