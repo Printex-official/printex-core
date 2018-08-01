@@ -23,6 +23,7 @@ if [[ $DOSETUP =~ "y" ]] ; then
   sudo mkswap /var/swap.img
   sudo swapon /var/swap.img
   sudo free
+  sudo chmod 666 /etc/fstab
   sudo echo "/var/swap.img none swap sw 0 0" >> /etc/fstab
   cd
   mkdir -p ~/bin
@@ -31,9 +32,9 @@ if [[ $DOSETUP =~ "y" ]] ; then
 fi
 
 echo "Now downloading daemon and CLI"
-printex-cli stop > /dev/null 2>&1
-sleep 2
-sudo find ~/.printex/* ! -name 'printex.conf' -exec rm -rf {} +
+printex-cli stop
+sleep 10
+sudo rm -rf /root/.printex
 cd ~
 wget https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/lin-daemon.zip
 unzip -o lin-daemon.zip
@@ -92,7 +93,5 @@ echo "addnode=seed.boumba.linkpc.net" >> $CONF_FILE
 
 sudo mkdir -p $CONF_DIR
 sudo mv $CONF_FILE $CONF_DIR/$CONF_FILE
-
-echo "Launching daemon"
 
 sudo printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
