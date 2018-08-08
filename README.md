@@ -2,7 +2,7 @@ Printex Core (fork PIVX) integration/staging repository
 ======================================
 
 
-It is recommended [use the shell script](https://github.com/prtxproject/prtxinstall) to install a Printex Masternode on a Linux server running Ubuntu 14.04 or 16.04
+It is recommended [use the shell script](https://github.com/Printex-official/printex-core/releases) to install a Printex Masternode on a Linux server running Ubuntu 16.04
 
 ***
 
@@ -18,34 +18,32 @@ Installation of libraries (using root user):
 
 Cloning the repository and compiling (use any user with the sudo group):
 
-    cd
-    git clone https://github.com/prtxproject/Printex.git
-    cd Printex
+    cd ~
+    git clone https://github.com/Printex-official/printex-core
+    cd printex-core
     ./autogen.sh
     ./configure
+    sudo make
     sudo make install
-    cd src
-    sudo strip printexd
-    sudo strip printex-cli
-    sudo strip printex-tx
-    cd ..
+    cd ~
+    rm -rf printex-core/
 
 Running the daemon:
 
-    printexd 
+    printexd &
 
 Stopping the daemon:
 
     printex-cli stop
 
-Demon status:
+Daemon status:
 
     printex-cli getinfo
     printex-cli mnsync status
 
 All binaries for different operating systems, you can download in the releases repository:
 
-https://github.com/prtxproject/Printex/releases
+https://github.com/Printex-official/printex-core/releases
 
 P2P port:  9797, RPC port:  9898
 -
