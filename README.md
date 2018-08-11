@@ -24,6 +24,10 @@ Cloning the repository and compiling (use any user with the sudo group):
     ./autogen.sh
     ./configure
     sudo make
+    sudo strip ./src/printexd
+    sudo strip ./src/printex-cli
+    sudo strip ./src/printex-tx
+    sudo strip ./src/test/test_printex
     sudo make install
     cd ~
     rm -rf printex-core/
