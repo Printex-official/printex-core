@@ -52,3 +52,6 @@ https://github.com/Printex-official/printex-core/releases
 P2P port:  9797, RPC port:  9898
 -
 Distributed under the MIT software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+
+wget https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/prtx_mn.sh
