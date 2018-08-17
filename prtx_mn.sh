@@ -1,110 +1,278 @@
-#/bin/bash
-clear
-echo "Do you want to install the required dependencies and create swap (no if you did it before)? [y/n]"
-read DOSETUP
+#!/bin/bash
 
-if [[ $DOSETUP =~ "y" ]] ; then
-  sudo apt-get update
-  sudo apt-get install -y nano htop git curl
-  sudo apt-get install -y software-properties-common
-  sudo apt-get install -y libtool autotools-dev pkg-config libssl-dev
-  sudo apt-get install -y libboost-all-dev libzmq3-dev
-  sudo apt-get install -y libevent-dev
-  sudo apt-get install -y libminiupnpc-dev
-  sudo apt-get install -y unzip
-  sudo add-apt-repository  -y  ppa:bitcoin/bitcoin
-  sudo apt-get update
-  sudo apt-get install -y libdb4.8-dev libdb4.8++-dev
+TMP_FOLDER=$(mktemp -d)
+CONFIG_FILE='printex.conf'
+CONFIGFOLDER='/root/.printex'
+COIN_DAEMON='printexd'
+COIN_CLI='printex-cli'
+COIN_PATH='/usr/local/bin/'
+COIN_TGZ='https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/lin-daemon.zip'
+COIN_ZIP=$(echo $COIN_TGZ | awk -F'/' '{print $NF}')
+COIN_NAME='Printex'
+COIN_PID='printex.pid'
+COIN_PORT=9797
+RPC_PORT=9898
 
-  cd /var
-  sudo touch swap.img
-  sudo chmod 600 swap.img
-  sudo dd if=/dev/zero of=/var/swap.img bs=1024k count=4000
-  sudo mkswap /var/swap.img
-  sudo swapon /var/swap.img
-  sudo free
-  sudo chmod 666 /etc/fstab
-  sudo echo "/var/swap.img none swap sw 0 0" >> /etc/fstab
-  cd
-  mkdir -p ~/bin
-  echo 'export PATH=~/bin:$PATH' > ~/.bash_aliases
-  source ~/.bashrc
-fi
+NODEIP=$(curl -s4 api.ipify.org)
 
-if ps -A | grep -q "[p]rintexd" ; then 
- printex-cli stop
- sleep 10
-fi
-echo "Now downloading daemon and CLI"
-sudo rm -rf /root/.printex
-cd ~
-wget https://github.com/Printex-official/printex-core/releases/download/v1.0.0.0/lin-daemon.zip
-unzip -o lin-daemon.zip
-sudo mv -f printexd /usr/local/bin/ && sudo mv -f printex-cli /usr/local/bin/
-chmod +x /usr/local/bin/printex*
-rm -rf lin-daemon.zip
 
-echo ""
-echo "Configuring IP - Please Wait......."
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
 
-declare -a NODE_IPS
-for ips in $(netstat -i | awk '!/Kernel|Iface|lo/ {print $1," "}')
-do
-  NODE_IPS+=($(curl --interface $ips --connect-timeout 2 -s4 icanhazip.com))
-done
 
-if [ ${#NODE_IPS[@]} -gt 1 ]
-  then
-    echo -e "More than one IP. Please type 0 to use the first IP, 1 for the second and so on...${NC}"
-    INDEX=0
-    for ip in "${NODE_IPS[@]}"
-    do
-      echo ${INDEX} $ip
-      let INDEX=${INDEX}+1
-    done
-    read -e choose_ip
-    IP=${NODE_IPS[$choose_ip]}
-else
-  IP=${NODE_IPS[0]}
-fi
+function download_node() {
+  echo -e "Prepare to download ${GREEN}$COIN_NAME${NC}."
+  cd $TMP_FOLDER >/dev/null 2>&1
+  wget -q $COIN_TGZ
+  compile_error
+  chmod +x $COIN_ZIP
+  unzip lin-daemon.zip
+  mv printex-cli $COIN_PATH && mv printexd $COIN_PATH
+  cd - >/dev/null 2>&1
+  rm -rf $TMP_FOLDER >/dev/null 2>&1
+  clear
+}
 
-echo "IP Done"
-echo ""
-echo "Enter masternode private key for node $ALIAS , Go To your Windows Wallet Tools > Debug Console , Type masternode genkey"
-read PRIVKEY
 
-echo "Creating configuration file"
+function configure_systemd() {
+  cat << EOF > /etc/systemd/system/$COIN_NAME.service
+[Unit]
+Description=$COIN_NAME service
+After=network.target
 
-CONF_DIR=/root/.printex
-CONF_FILE=printex.conf
-PORT=9797
+[Service]
+User=root
+Group=root
 
-echo "rpcuser=user"`shuf -i 100000-10000000 -n 1` >> $CONF_FILE
-echo "rpcpassword=pass"`shuf -i 100000-10000000 -n 1` >> $CONF_FILE
-echo "rpcallowip=127.0.0.1" >> $CONF_FILE
-echo "rpcport=9898" >> $CONF_FILE
-echo "listen=1" >> $CONF_FILE
-echo "server=1" >> $CONF_FILE
-echo "daemon=1" >> $CONF_FILE
-echo "logtimestamps=1" >> $CONF_FILE
-echo "masternode=1" >> $CONF_FILE
-echo "port=$PORT" >> $CONF_FILE
-echo "mastenodeaddr=$IP:$PORT" >> $CONF_FILE
-echo "masternodeprivkey=$PRIVKEY" >> $CONF_FILE
-echo "addnode=seed.boumba.linkpc.net" >> $CONF_FILE
+Type=forking
+#PIDFile=$CONFIGFOLDER/$COIN_NAME.pid
 
-sudo mkdir -p $CONF_DIR
-sudo mv $CONF_FILE $CONF_DIR/$CONF_FILE
+ExecStart=$COIN_PATH$COIN_DAEMON -daemon -conf=$CONFIGFOLDER/$CONFIG_FILE -datadir=$CONFIGFOLDER -pid=$CONFIGFOLDER/$COIN_PID
+ExecStop=-$COIN_PATH$COIN_CLI -conf=$CONFIGFOLDER/$CONFIG_FILE -datadir=$CONFIGFOLDER stop
 
-if [ -d "/home/$USER" ]; then
- echo "Would you like to install command line interface for user $USER? [y/n]"
- read INSTALL_USER
- if [[ $INSTALL_USER =~ "y" ]] ; then
-  if [ ! -d "/home/$USER/.printex" ]; then
-   mkdir /home/$USER/.printex
+Restart=always
+PrivateTmp=true
+TimeoutStopSec=60s
+TimeoutStartSec=10s
+StartLimitInterval=120s
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  systemctl daemon-reload
+  sleep 3
+  systemctl start $COIN_NAME.service
+  systemctl enable $COIN_NAME.service >/dev/null 2>&1
+
+  if [[ -z "$(ps axo cmd:100 | egrep $COIN_DAEMON)" ]]; then
+    echo -e "${RED}$COIN_NAME is not running${NC}, please investigate. You should start by running the following commands as root:"
+    echo -e "${GREEN}systemctl start $COIN_NAME.service"
+    echo -e "systemctl status $COIN_NAME.service"
+    echo -e "less /var/log/syslog${NC}"
+    exit 1
   fi
-  sudo cp /root/.printex/printex.conf /home/$USER/.printex/printex.conf
- fi
+}
+
+
+function create_config() {
+  mkdir $CONFIGFOLDER >/dev/null 2>&1
+  RPCUSER=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w10 | head -n1)
+  RPCPASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w22 | head -n1)
+  cat << EOF > $CONFIGFOLDER/$CONFIG_FILE
+rpcuser=$RPCUSER
+rpcpassword=$RPCPASSWORD
+rpcport=$RPC_PORT
+rpcallowip=127.0.0.1
+listen=1
+server=1
+daemon=1
+port=$COIN_PORT
+EOF
+}
+
+function create_key() {
+  echo -e "Enter your ${RED}$COIN_NAME Masternode Private Key${NC}. Leave it blank to generate a new ${RED}Masternode Private Key${NC} for you:"
+  read -e COINKEY
+  if [[ -z "$COINKEY" ]]; then
+  $COIN_PATH$COIN_DAEMON -daemon
+  sleep 30
+  if [ -z "$(ps axo cmd:100 | grep $COIN_DAEMON)" ]; then
+   echo -e "${RED}$COIN_NAME server couldn not start. Check /var/log/syslog for errors.{$NC}"
+   exit 1
+  fi
+  COINKEY=$($COIN_PATH$COIN_CLI masternode genkey)
+  if [ "$?" -gt "0" ];
+    then
+    echo -e "${RED}Wallet not fully loaded. Let us wait and try again to generate the Private Key${NC}"
+    sleep 30
+    COINKEY=$($COIN_PATH$COIN_CLI masternode genkey)
+  fi
+  $COIN_PATH$COIN_CLI stop
+fi
+clear
+}
+
+function update_config() {
+  sed -i 's/daemon=1/daemon=0/' $CONFIGFOLDER/$CONFIG_FILE
+  cat << EOF >> $CONFIGFOLDER/$CONFIG_FILE
+logintimestamps=1
+maxconnections=256
+#bind=$NODEIP
+masternode=1
+externalip=$NODEIP:$COIN_PORT
+masternodeprivkey=$COINKEY
+addnode=118.184.105.17
+addnode=188.213.31.22
+addnode=45.76.230.226
+addnode=173.170.21.37
+addnode=207.148.92.197
+addnode=71.227.157.122
+addnode=95.179.152.168
+addnode=80.211.176.137
+addnode=207.246.67.168
+addnode=77.66.176.134
+addnode=71.203.213.243
+addnode=24.146.179.128
+addnode=149.28.134.70
+addnode=140.82.38.58
+addnode=139.99.8.48
+addnode=107.213.209.66
+addnode=199.247.1.4
+addnode=178.192.170.54
+addnode=80.240.17.27
+addnode=87.180.119.152
+addnode=173.199.114.171
+addnode=144.202.113.186
+EOF
+}
+
+
+function enable_firewall() {
+  echo -e "Installing and setting up firewall to allow ingress on port ${GREEN}$COIN_PORT${NC}"
+  ufw allow $COIN_PORT/tcp comment "$COIN_NAME MN port" >/dev/null
+  ufw allow ssh comment "SSH" >/dev/null 2>&1
+  ufw limit ssh/tcp >/dev/null 2>&1
+  ufw default allow outgoing >/dev/null 2>&1
+  echo "y" | ufw enable >/dev/null 2>&1
+}
+
+
+function get_ip() {
+  declare -a NODE_IPS
+  for ips in $(netstat -i | awk '!/Kernel|Iface|lo/ {print $1," "}')
+  do
+    NODE_IPS+=($(curl --interface $ips --connect-timeout 2 -s4 api.ipify.org))
+  done
+
+  if [ ${#NODE_IPS[@]} -gt 1 ]
+    then
+      echo -e "${GREEN}More than one IP. Please type 0 to use the first IP, 1 for the second and so on...${NC}"
+      INDEX=0
+      for ip in "${NODE_IPS[@]}"
+      do
+        echo ${INDEX} $ip
+        let INDEX=${INDEX}+1
+      done
+      read -e choose_ip
+      NODEIP=${NODE_IPS[$choose_ip]}
+  else
+    NODEIP=${NODE_IPS[0]}
+  fi
+}
+
+
+function compile_error() {
+if [ "$?" -gt "0" ];
+ then
+  echo -e "${RED}Failed to compile $COIN_NAME. Please investigate.${NC}"
+  exit 1
+fi
+}
+
+
+function checks() {
+if [[ $(lsb_release -d) != *16.04* ]]; then
+  echo -e "${RED}You are not running Ubuntu 16.04. Installation is cancelled.${NC}"
+  exit 1
 fi
 
-sudo printexd -daemon -pid=/root/.printex/printex.pid -conf=/root/.printex/printex.conf -datadir=/root/.printex
+if [[ $EUID -ne 0 ]]; then
+   echo -e "${RED}$0 must be run as root.${NC}"
+   exit 1
+fi
+
+if [ -n "$(pidof $COIN_DAEMON)" ] || [ -e "$COIN_DAEMOM" ] ; then
+  echo -e "${RED}$COIN_NAME is already installed.${NC}"
+  exit 1
+fi
+}
+
+function prepare_system() {
+echo -e "Prepare the system to install ${GREEN}$COIN_NAME${NC} master node."
+apt-get update >/dev/null 2>&1
+DEBIAN_FRONTEND=noninteractive apt-get update > /dev/null 2>&1
+DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq upgrade >/dev/null 2>&1
+apt install -y software-properties-common >/dev/null 2>&1
+echo -e "${GREEN}Adding bitcoin PPA repository"
+apt-add-repository -y ppa:bitcoin/bitcoin >/dev/null 2>&1
+echo -e "Installing required packages, it may take some time to finish.${NC}"
+apt-get update >/dev/null 2>&1
+apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" make software-properties-common \
+build-essential libtool autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev libboost-program-options-dev \
+libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git wget curl libdb4.8-dev bsdmainutils libdb4.8++-dev \
+libminiupnpc-dev libgmp3-dev ufw pkg-config libevent-dev  libdb5.3++ unzip libzmq5 >/dev/null 2>&1
+if [ "$?" -gt "0" ];
+  then
+    echo -e "${RED}Not all required packages were installed properly. Try to install them manually by running the following commands:${NC}\n"
+    echo "apt-get update"
+    echo "apt -y install software-properties-common"
+    echo "apt-add-repository -y ppa:bitcoin/bitcoin"
+    echo "apt-get update"
+    echo "apt install -y make build-essential libtool software-properties-common autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev \
+libboost-program-options-dev libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git curl libdb4.8-dev \
+bsdmainutils libdb4.8++-dev libminiupnpc-dev libgmp3-dev ufw pkg-config libevent-dev libdb5.3++ unzip libzmq5"
+ exit 1
+fi
+clear
+}
+
+function important_information() {
+ echo -e "================================================================================================================================"
+ echo -e "$COIN_NAME Masternode is up and running listening on port ${RED}$COIN_PORT${NC}."
+ echo -e "Configuration file is: ${RED}$CONFIGFOLDER/$CONFIG_FILE${NC}"
+ echo -e "Start: ${RED}systemctl start $COIN_NAME.service${NC}"
+ echo -e "Stop: ${RED}systemctl stop $COIN_NAME.service${NC}"
+ echo -e "VPS_IP:PORT ${RED}$NODEIP:$COIN_PORT${NC}"
+ echo -e "MASTERNODE PRIVATEKEY is: ${RED}$COINKEY${NC}"
+ echo -e "Please check ${RED}$COIN_NAME${NC} daemon is running with the following command: ${RED}systemctl status $COIN_NAME.service${NC}"
+ echo -e "Use ${RED}$COIN_CLI masternode status${NC} to check your MN."
+ if [[ -n $SENTINEL_REPO  ]]; then
+  echo -e "${RED}Sentinel${NC} is installed in ${RED}$CONFIGFOLDER/sentinel${NC}"
+  echo -e "Sentinel logs is: ${RED}$CONFIGFOLDER/sentinel.log${NC}"
+ fi
+
+ echo -e "Thanks for donations on PRTX: pCRNk4f3LK584LNrUudW5Rqb4Vkv4NiJqR"
+ echo -e "================================================================================================================================"
+}
+
+function setup_node() {
+  get_ip
+  create_config
+  create_key
+  update_config
+  enable_firewall
+  important_information
+  configure_systemd
+}
+
+
+##### Main #####
+clear
+
+checks
+prepare_system
+download_node
+setup_node
