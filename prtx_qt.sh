@@ -1,6 +1,6 @@
 sudo apt-get update
 sudo apt-get install -y libtool libssl-dev
-sudo apt-get install -y libboost-all-dev libzmq3-dev
+sudo apt-get install -y libboost-all-dev libboost-program-options-dev libzmq3-dev
 sudo apt-get install -y libevent-dev libqrencode3
 sudo apt-get install -y libminiupnpc-dev unzip
 sudo add-apt-repository -y ppa:bitcoin/bitcoin
